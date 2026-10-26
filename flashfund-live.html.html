@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusMart | FlashFund Live Terminal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root {
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --main-bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --primary-blue: #2563eb;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--main-bg);
+      color: var(--text-dark);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ═══════════ SIDEBAR (FIXED) ═══════════ */
+    .sidebar {
+      width: 260px; background: var(--sidebar-bg); color: white;
+      display: flex; flex-direction: column; border-right: 1px solid #1e293b; 
+      position: fixed; top: 0; bottom: 0; left: 0; z-index: 100;
+    }
+    .sidebar-brand {
+      padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1e293b;
+    }
+    .brand-icon {
+      background: linear-gradient(135deg, var(--primary-blue), #1e3a8a);
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; box-shadow: 0 4px 10px rgba(37,99,235,0.4);
+    }
+    .sidebar-brand h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
+    .sidebar-brand h1 span { color: var(--primary-blue); }
+
+    .sidebar-nav { padding: 24px 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+      border-radius: 8px; color: #94a3b8; text-decoration: none;
+      font-size: 0.9rem; font-weight: 600; transition: 0.2s; cursor: pointer;
+    }
+    .nav-item:hover { background: var(--sidebar-hover); color: white; }
+    .nav-item.active { background: rgba(37, 99, 235, 0.15); color: #60a5fa; border-left: 3px solid var(--primary-blue); }
+    .nav-item i { width: 20px; text-align: center; font-size: 1.1rem; }
+
+    .sidebar-footer {
+      padding: 24px; border-top: 1px solid #1e293b;
+      font-size: 0.75rem; color: #64748b; font-family: 'JetBrains Mono', monospace;
+    }
+    .sys-status { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+    /* ═══════════ MAIN CONTENT ═══════════ */
+    .main-content { margin-left: 260px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* TOP BAR (FIXED) */
+    .topbar {
+      height: 70px; background: var(--card-bg); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 32px; 
+      position: sticky; top: 0; z-index: 90;
+    }
+    .page-title h2 { font-size: 1.2rem; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 10px; }
+    .page-title p { font-size: 0.8rem; color: var(--text-muted); }
+
+    .topbar-right { display: flex; align-items: center; gap: 24px; }
+    .live-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: #ecfdf5; border: 1px solid #a7f3d0; color: var(--success);
+      padding: 8px 18px; border-radius: 50px; font-size: 0.8rem;
+      font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }
+    .live-badge i { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    /* WORKSPACE */
+    .workspace { padding: 32px; flex: 1; display: flex; justify-content: center; }
+
+    /* ═══════════ VIEW SWITCHING ═══════════ */
+    .view { display: none; width: 100%; justify-content: center; gap: 32px; }
+    .view.active { display: flex; }
+
+    /* VIEW 1: CONFIGURATION */
+    .action-col { flex: 1; max-width: 650px; display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; }
+    .telemetry-col { width: 340px; display: flex; flex-direction: column; gap: 24px; flex-shrink: 0; }
+
+    /* UI CARDS */
+    .ui-card {
+      background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border);
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); overflow: hidden;
+    }
+
+    .wizard-header {
+      padding: 24px 32px; background: #f8fafc; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 16px;
+    }
+    .wizard-icon {
+      width: 48px; height: 48px; background: #e0e7ff; color: var(--primary-blue);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+    }
+    .wizard-header h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+    .wizard-header p { font-size: 0.85rem; color: var(--text-muted); }
+
+    .wizard-body { padding: 32px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .input-group { margin-bottom: 20px; }
+    .input-label { 
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; 
+    }
+    .input-label .optional { font-size: 0.65rem; color: #94a3b8; text-transform: none; font-weight: 500; }
+    .input-inner { position: relative; }
+    .input-inner i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+    
+    .ui-input {
+      width: 100%; padding: 16px 16px 16px 44px; font-size: 1rem; font-weight: 500;
+      background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px;
+      outline: none; transition: 0.3s; color: var(--text-dark);
+    }
+    .ui-input:focus { border-color: var(--primary-blue); background: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+    .ui-input:disabled { background: #f1f5f9; color: #64748b; cursor: not-allowed; }
+    .ui-input.valid { border-color: var(--success); background: #f0fdf4; }
+    .ui-input.fetching { border-color: var(--warning); background: #fffbeb; color: var(--warning); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; }
+    .ui-input.invalid { border-color: var(--danger); background: #fef2f2; color: var(--danger); font-weight: 700; }
+
+    .bank-select {
+      width: 100%; padding: 16px; font-size: 1rem; font-weight: 500;
+      background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px;
+      outline: none; transition: 0.3s; color: var(--text-dark); appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 16px center; background-size: 14px;
+    }
+    .bank-select:focus { border-color: var(--primary-blue); background-color: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+
+    .btn {
+      width: 100%; padding: 16px; border-radius: 10px; font-weight: 700; font-size: 1rem;
+      cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;
+      border: none; letter-spacing: 0.3px;
+    }
+    .btn-scan { background: #0f172a; color: white; }
+    .btn-scan:hover:not(:disabled) { background: #1e293b; }
+    .btn-scan:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
+    .btn-flash { background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; font-size: 1.1rem; padding: 18px; }
+    .btn-flash:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); }
+    .btn-flash:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
+
+    .divider {
+      display: flex; align-items: center; text-align: center;
+      color: #94a3b8; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      margin: 24px 0;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border); }
+    .divider::before { margin-right: 16px; }
+    .divider::after { margin-left: 16px; }
+
+    /* SECURITY SCANNER */
+    .scanner-box {
+      background: #0f172a; border-radius: 12px; padding: 24px;
+      border: 1px solid #1e293b; margin-bottom: 24px; position: relative; overflow: hidden;
+    }
+    .scanner-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .scanner-header h4 { color: white; font-size: 1rem; font-family: 'JetBrains Mono', monospace; }
+    
+    .scan-line {
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: rgba(37, 99, 235, 0.5); box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
+      display: none;
+    }
+    .scanning .scan-line { display: block; animation: scanAnim 1.5s linear infinite; }
+    @keyframes scanAnim { 0% { top: 0; } 100% { top: 100%; } }
+
+    .scan-terminal {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #94a3b8;
+      height: 80px; overflow-y: auto; margin-bottom: 20px;
+    }
+    .scan-terminal div { margin-bottom: 4px; }
+    
+    .progress-track { width: 100%; height: 8px; background: #1e293b; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+    .progress-fill { height: 100%; width: 0%; background: var(--primary-blue); transition: width 0.1s linear; }
+    .scan-stats { display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; font-family: 'JetBrains Mono', monospace; }
+    .scan-stats .percent { color: var(--primary-blue); font-weight: 700; font-size: 1rem; }
+
+    .scan-result { display: none; text-align: center; padding: 10px 0; }
+    .scan-result.active { display: block; }
+    .scan-result .score {
+      font-size: 3rem; font-weight: 800; color: var(--warning); line-height: 1;
+      font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    }
+    .scan-result .label {
+      font-size: 0.9rem; font-weight: 700; color: var(--warning);
+      text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; margin-bottom: 4px;
+    }
+    .scan-result .desc { font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px; }
+    
+    .btn-rescan {
+      background: transparent; border: 1px solid #475569; color: #94a3b8;
+      padding: 8px 16px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .btn-rescan:hover { background: #1e293b; color: white; border-color: #64748b; }
+
+    /* SIDEBAR WIDGETS */
+    .widget-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border); background: #f8fafc;
+      font-size: 0.85rem; font-weight: 700; color: var(--text-dark);
+      display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .widget-header i { color: var(--primary-blue); }
+    .widget-body { padding: 20px; }
+
+    .metric-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85rem; }
+    .metric-row span:first-child { color: var(--text-muted); }
+    .metric-row span:last-child { font-weight: 700; font-family: 'JetBrains Mono'; }
+    .bar-bg { height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+    .bar-fill { height: 100%; border-radius: 10px; }
+    .bar-fill.blue { background: var(--primary-blue); width: 78%; }
+    .bar-fill.green { background: var(--success); width: 92%; }
+
+    .activity-list { display: flex; flex-direction: column; gap: 16px; }
+    .activity-item { display: flex; gap: 12px; font-size: 0.8rem; }
+    .activity-icon {
+      width: 28px; height: 28px; border-radius: 50%; background: #e0e7ff; color: var(--primary-blue);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .activity-icon.green { background: #dcfce7; color: var(--success); }
+    .activity-text h5 { font-weight: 700; color: var(--text-dark); margin-bottom: 2px; }
+    .activity-text p { color: var(--text-muted); font-size: 0.75rem; }
+
+    /* ═══════════ VIEW 2: SEND FUNDS ═══════════ */
+    .send-col { flex: 1; max-width: 680px; display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; }
+    
+    .balance-widget {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: 16px; padding: 32px; text-align: center; color: white;
+      border: 1px solid #334155; position: relative; overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .balance-widget::before {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 60%);
+      animation: rotateBg 10s linear infinite;
+    }
+    @keyframes rotateBg { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .balance-label { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+    
+    .balance-amount {
+      font-family: 'JetBrains Mono', monospace; font-size: 3rem; font-weight: 800;
+      color: var(--warning); letter-spacing: -1px; line-height: 1;
+      position: relative; z-index: 1;
+      animation: flashGreen 2s ease-in-out infinite;
+    }
+    @keyframes flashGreen {
+      0%, 100% { text-shadow: 0 0 10px rgba(245, 158, 11, 0.2); color: var(--warning); }
+      50% { text-shadow: 0 0 30px rgba(245, 158, 11, 0.8); color: #fbbf24; }
+    }
+    
+    .balance-sub { font-size: 0.8rem; color: #64748b; margin-top: 8px; position: relative; z-index: 1; }
+
+    /* Form */
+    .send-form { padding: 32px; }
+    
+    /* Loading Overlay (Log Terminal) */
+    .loading-overlay {
+      display: none; padding: 32px;
+    }
+    .loading-overlay.active { display: block; }
+    
+    .spinner-large {
+      width: 60px; height: 60px; border: 4px solid #e2e8f0; border-top: 4px solid var(--warning);
+      border-radius: 50%; margin: 0 auto 20px; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .loading-text { font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; text-align: center; }
+    .loading-sub { font-size: 0.85rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; text-align: center; margin-bottom: 20px; }
+
+    .log-terminal {
+      background: #0f172a; border-radius: 10px; padding: 20px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+      color: #94a3b8; height: 180px; overflow-y: auto;
+      border: 1px solid #1e293b;
+    }
+    .log-line { margin-bottom: 6px; opacity: 0; animation: fadeIn 0.3s forwards; }
+    .log-line.success { color: var(--success); }
+    .log-line.warning { color: var(--warning); }
+    .log-line.info { color: #60a5fa; }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    /* Receipt (FAILED/HELD STATE) */
+    .receipt-box {
+      display: none;
+      border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+      background: white;
+    }
+    .receipt-box.active { display: block; animation: slideUp 0.5s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .receipt-header {
+      background: #fef2f2; padding: 24px; text-align: center; border-bottom: 1px dashed var(--border);
+    }
+    .receipt-header i { font-size: 2.5rem; color: var(--danger); margin-bottom: 12px; }
+    .receipt-header h3 { font-size: 1.3rem; font-weight: 800; color: var(--danger); }
+    
+    .receipt-body { padding: 24px 32px; }
+    
+    .receipt-section-title {
+      font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--primary-blue);
+      margin-bottom: 12px; margin-top: 24px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+    }
+    .receipt-section-title:first-child { margin-top: 0; }
+
+    .receipt-row { 
+      display: flex; justify-content: space-between; align-items: flex-start; 
+      margin-bottom: 12px; font-size: 0.85rem; 
+    }
+    .receipt-row:last-child { margin-bottom: 0; }
+    .receipt-row span:first-child { color: var(--text-muted); width: 40%; }
+    .receipt-row span:last-child { 
+      font-weight: 700; font-family: 'JetBrains Mono', monospace; 
+      color: var(--text-dark); text-align: right; width: 60%; word-break: break-all; line-height: 1.4;
+    }
+
+    .error-message-box {
+      background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
+      padding: 16px; margin-top: 20px; display: flex; gap: 12px;
+    }
+    .error-message-box i { color: var(--danger); font-size: 1.2rem; margin-top: 2px; }
+    .error-message-box p { font-size: 0.85rem; color: #991b1b; line-height: 1.5; }
+    .error-message-box strong { color: #7f1d1d; }
+
+    .btn-done {
+      width: calc(100% - 64px); margin: 0 32px 32px; padding: 16px; background: #0f172a; color: white; border: none;
+      border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-done:hover { background: #1e293b; }
+
+    /* Transaction History */
+    .history-section { margin-top: 10px; }
+    .history-title { font-size: 0.9rem; font-weight: 700; color: var(--text-dark); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    
+    .history-list { display: flex; flex-direction: column; gap: 12px; }
+    .history-item {
+      background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .history-info h4 { font-size: 0.95rem; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; }
+    .history-info p { font-size: 0.72rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 2px; }
+    .history-amount { font-size: 1.1rem; font-weight: 800; color: var(--danger); font-family: 'JetBrains Mono', monospace; }
+
+    /* VIEW 3: FULL TRANSACTION HISTORY PAGE */
+    .history-page {
+      flex: 1; max-width: 800px; width: 100%; display: flex; flex-direction: column; gap: 24px;
+    }
+    .history-page .ui-card { padding: 32px; }
+    .history-page h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 24px; color: var(--text-dark); display: flex; align-items: center; gap: 12px; }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+    }
+    .empty-state i { font-size: 3rem; color: #cbd5e1; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 1.2rem; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; }
+    .empty-state p { font-size: 0.9rem; color: var(--text-muted); }
+
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="fas fa-cube"></i></div>
+      <h1>Nexus<span>Mart</span></h1>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <a class="nav-item" onclick="switchNav('viewConfig')"><i class="fas fa-chart-pie"></i> Dashboard</a>
+      <a class="nav-item active" onclick="switchNav('viewConfig')" id="navTerminal"><i class="fas fa-bolt"></i> Flash Terminal</a>
+      <a class="nav-item"><i class="fas fa-wallet"></i> My Licenses</a>
+      <a class="nav-item" onclick="switchNav('viewFullHistory')" id="navHistory"><i class="fas fa-history"></i> Transaction History</a>
+      <a class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sys-status">
+        <div class="status-dot"></div> Systems Operational
+      </div>
+      <div>v4.2.1-enterprise</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="page-title">
+        <h2 id="pageTitle">FlashFund Injector <i class="fas fa-check-circle" style="color: var(--success); font-size: 1rem;"></i></h2>
+        <p id="pageSubtitle">License Active & Connected to Node</p>
+      </div>
+      <div class="topbar-right">
+        <div class="live-badge">
+          <i class="fas fa-circle"></i> Software Live
+        </div>
+      </div>
+    </header>
+
+    <!-- WORKSPACE -->
+    <div class="workspace">
+      
+      <!-- VIEW 1: CONFIGURATION -->
+      <div class="view active" id="viewConfig">
+        <div class="action-col">
+          
+          <!-- FLASHING BALANCE -->
+          <div class="balance-widget" style="margin-bottom: 0;">
+            <div class="balance-label">Available Flash Balance</div>
+            <div class="balance-amount" id="terminalBalanceDisplay">₦29,450,000,000.00</div>
+            <div class="balance-sub">Connected to FlashFund Core · NG</div>
+          </div>
+
+          <div class="ui-card">
+            <div class="wizard-header">
+              <div class="wizard-icon" style="background: #ffedd5; color: var(--warning);"><i class="fas fa-bolt"></i></div>
+              <div>
+                <h2>Target Configuration</h2>
+                <p>Enter the destination bank details to initiate flash routing.</p>
+              </div>
+            </div>
+
+            <div class="wizard-body">
+              
+              <div class="input-group">
+                <label class="input-label">Select Destination Bank</label>
+                <select class="bank-select" id="bankSelect">
+                  <option value="058">Guaranty Trust Bank (GTBank)</option>
+                  <option value="044">Access Bank</option>
+                  <option value="011">First Bank of Nigeria</option>
+                  <option value="057">Zenith Bank</option>
+                  <option value="033">United Bank for Africa (UBA)</option>
+                  <option value="214">First City Monument Bank (FCMB)</option>
+                  <option value="070">Fidelity Bank</option>
+                  <option value="076">Polaris Bank</option>
+                  <option value="221">Stanbic IBTC Bank</option>
+                  <option value="232">Sterling Bank</option>
+                  <option value="100004">OPay Digital Services</option>
+                  <option value="100033">PalmPay</option>
+                  <option value="50515">Moniepoint MFB</option>
+                  <option value="090267">Kuda Microfinance Bank</option>
+                </select>
+              </div>
+
+              <div class="grid-2">
+                <div class="input-group">
+                  <label class="input-label">Bank Account Number</label>
+                  <div class="input-inner">
+                    <i class="fas fa-hashtag"></i>
+                    <input type="text" id="accNumber" class="ui-input" placeholder="10-digit account no." maxlength="10" autocomplete="off">
+                  </div>
+                </div>
+                
+                <div class="input-group">
+                  <label class="input-label">Account Name</label>
+                  <div class="input-inner">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="accName" class="ui-input" placeholder="Auto-generates..." disabled>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="input-group">
+                  <label class="input-label">Phone Number <span class="optional">(Optional)</span></label>
+                  <div class="input-inner">
+                    <i class="fas fa-phone"></i>
+                    <input type="text" class="ui-input" placeholder="e.g. 08012345678">
+                  </div>
+                </div>
+
+                <div class="input-group">
+                  <label class="input-label">Email Address <span class="optional">(Optional)</span></label>
+                  <div class="input-inner">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" class="ui-input" placeholder="e.g. user@domain.com">
+                  </div>
+                </div>
+              </div>
+
+              <div class="divider">Final Security Check</div>
+
+              <!-- SECURITY SCANNER -->
+              <div class="scanner-box" id="scannerBox">
+                <div class="scan-line"></div>
+                
+                <div id="scanIdle">
+                  <div class="scanner-header">
+                    <h4><i class="fas fa-shield-alt"></i> NODE SECURITY AUDIT</h4>
+                    <span style="color: var(--warning); font-size: 0.75rem; font-family: 'JetBrains Mono';">PENDING</span>
+                  </div>
+                  <div class="scan-terminal" id="scanTerminal">
+                    <div>> Awaiting deep packet scan...</div>
+                    <div>> Target account recognized.</div>
+                  </div>
+                  <button class="btn btn-scan" id="btnStartScan" onclick="startSecurityScan()" disabled>
+                    <i class="fas fa-search"></i> Scan Security Level
+                  </button>
+                </div>
+
+                <div id="scanLoading" style="display: none;">
+                  <div class="scanner-header">
+                    <h4><i class="fas fa-circle-notch fa-spin"></i> SCANNING NETWORK...</h4>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="scanProgress"></div>
+                  </div>
+                  <div class="scan-stats">
+                    <span id="scanStatusText">Testing firewall integrity...</span>
+                    <span class="percent" id="scanPercent">0%</span>
+                  </div>
+                </div>
+
+                <div class="scan-result" id="scanResult">
+                  <div class="score" id="resultScore">48%</div>
+                  <div class="label"><i class="fas fa-shield-alt"></i> Security Level: Low</div>
+                  <div class="desc">Connection encrypted. Ready to route.</div>
+                  <button class="btn-rescan" onclick="resetScanner()"><i class="fas fa-redo"></i> Scan Again</button>
+                </div>
+              </div>
+
+              <!-- FINAL BUTTON -->
+              <button class="btn btn-flash" id="btnFlash" onclick="goToSendFunds()" disabled>
+                <i class="fas fa-bolt"></i> Execute Flash Transfer
+              </button>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="telemetry-col">
+          <div class="ui-card">
+            <div class="widget-header"><i class="fas fa-server"></i> Node Status</div>
+            <div class="widget-body">
+              <div class="metric-row"><span>Network Ping</span><span>14ms</span></div>
+              <div class="bar-bg"><div class="bar-fill green"></div></div>
+              <div class="metric-row"><span>Injector Core</span><span>Optimal</span></div>
+              <div class="bar-bg"><div class="bar-fill blue"></div></div>
+            </div>
+          </div>
+
+          <div class="ui-card">
+            <div class="widget-header"><i class="fas fa-history"></i> Live Queue</div>
+            <div class="widget-body">
+              <div class="activity-list">
+                <div class="activity-item">
+                  <div class="activity-icon green"><i class="fas fa-check"></i></div>
+                  <div class="activity-text">
+                    <h5>Flash Successful</h5>
+                    <p>₦2,400,000 · GTBank</p>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-icon green"><i class="fas fa-check"></i></div>
+                  <div class="activity-text">
+                    <h5>Flash Successful</h5>
+                    <p>$4,500 · Chase Bank</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: SEND FUNDS -->
+      <div class="view" id="viewSendFunds">
+        <div class="send-col">
+          
+          <!-- FLASHING BALANCE WIDGET -->
+          <div class="balance-widget">
+            <div class="balance-label">Available Flash Balance</div>
+            <div class="balance-amount" id="sendBalanceDisplay">₦29,450,000,000.00</div>
+            <div class="balance-sub">Connected to FlashFund Core · NG</div>
+          </div>
+
+          <!-- SEND FORM (Amount + Narration) -->
+          <div class="ui-card send-form" id="sendForm">
+            <div class="input-group">
+              <label class="input-label">Amount to Send</label>
+              <div class="input-inner">
+                <i class="fas fa-money-bill-wave"></i>
+                <input type="text" id="sendAmount" class="ui-input" placeholder="e.g. 500000" autocomplete="off">
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Narration / Description</label>
+              <div class="input-inner">
+                <i class="fas fa-pen"></i>
+                <input type="text" id="sendNarration" class="ui-input" placeholder="e.g. Payment for services" autocomplete="off">
+              </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Sending To:</div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-dark);" id="targetDisplay">PEEF MARINE GLOBAL SERVICES LIMITED</div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--primary-blue); margin-top: 4px;" id="targetAccDisplay">4010946364 · GTBank</div>
+            </div>
+
+            <button class="btn btn-flash" id="btnSend" onclick="startTransferLoading()">
+              <i class="fas fa-paper-plane"></i> Send Funds
+            </button>
+          </div>
+
+          <!-- LOADING STATE (Log Terminal) -->
+          <div class="ui-card loading-overlay" id="loadingTransfer">
+            <div class="spinner-large"></div>
+            <div class="loading-text">Processing Flash Transfer...</div>
+            <div class="loading-sub" id="loadingTimer">Routing via secure node (30s)</div>
+            
+            <div class="log-terminal" id="logTerminal">
+              <!-- Logs will appear here -->
+            </div>
+          </div>
+
+          <!-- RECEIPT (FAILED/HELD STATE) -->
+          <div class="ui-card receipt-box" id="receiptBox">
+            <div class="receipt-header">
+              <i class="fas fa-exclamation-circle"></i>
+              <h3>Transaction Failed / Held</h3>
+            </div>
+            <div class="receipt-body">
+              
+              <div class="receipt-section-title">Recipient Details</div>
+              <div class="receipt-row"><span>Account Name</span><span>PEEF MARINE GLOBAL SERVICES LIMITED</span></div>
+              <div class="receipt-row"><span>Bank</span><span id="rcpBank">GTBank</span></div>
+              <div class="receipt-row"><span>Account Number</span><span id="rcpAccNo">4010946364</span></div>
+
+              <div class="receipt-section-title">Transaction Info</div>
+              <div class="receipt-row"><span>Amount</span><span id="rcpAmount">₦0.00</span></div>
+              <div class="receipt-row"><span>Narration</span><span id="rcpNarration">-</span></div>
+              <div class="receipt-row"><span>Payment Method</span><span>NIP (NIBSS Instant Payment)</span></div>
+              <div class="receipt-row"><span>Transaction No.</span><span id="rcpTxnNo" style="letter-spacing: 1px;">000000000000000000000000</span></div>
+              <div class="receipt-row"><span>Session ID</span><span id="rcpSessionId" style="font-size: 0.75rem; letter-spacing: 0.5px;">000000000000000000000000000000</span></div>
+              <div class="receipt-row"><span>Transaction Date</span><span id="rcpDate">-</span></div>
+              
+              <div class="receipt-row" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 12px;">
+                <span>Status</span><span style="color: var(--danger);">✕ Unable to Complete</span>
+              </div>
+
+              <div class="error-message-box">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>
+                  <strong>Unable to complete transaction.</strong> The funds have been debited from your balance but are currently held in transit. 
+                  <br><br>
+                  This usually happens when the BVN monitor detects a mismatch or the NIBSS watchlist flags the recipient. Please contact support with your Transaction No.
+                </p>
+              </div>
+            </div>
+            <button class="btn-done" onclick="resetToConfig()"><i class="fas fa-arrow-left"></i> Return to Terminal</button>
+          </div>
+
+          <!-- QUICK HISTORY (Below receipt) -->
+          <div class="history-section" id="historySection" style="display: none;">
+            <div class="history-title"><i class="fas fa-history"></i> Recent Transfers</div>
+            <div class="history-list" id="historyList">
+              <!-- History items injected here -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- VIEW 3: FULL TRANSACTION HISTORY PAGE -->
+      <div class="view" id="viewFullHistory">
+        <div class="history-page">
+          <div class="ui-card">
+            <h2><i class="fas fa-history" style="color: var(--primary-blue);"></i> Transaction History</h2>
+            
+            <div class="history-list" id="fullHistoryList">
+              <!-- Full history injected here -->
+            </div>
+
+            <div class="empty-state" id="emptyHistoryState">
+              <i class="fas fa-receipt"></i>
+              <h3>No Transactions Yet</h3>
+              <p>Your completed flash transfers will appear here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // --- STATE ---
+    const VALID_ACCOUNT_NUMBER = '4010946364';
+    const ACCOUNT_NAME = 'PEEF MARINE GLOBAL SERVICES LIMITED';
+    
+    let currentBankName = 'GTBank';
+    let currentAccNumber = VALID_ACCOUNT_NUMBER;
+    let transferHistory = [];
+    
+    // Balance state
+    let currentBalance = 29450000000.00; // ₦29.45 Billion
+    let pendingAmount = 0;
+    let pendingNarration = '';
+
+    const accNumberInput = document.getElementById('accNumber');
+    const accNameInput = document.getElementById('accName');
+    const bankSelect = document.getElementById('bankSelect');
+    const btnStartScan = document.getElementById('btnStartScan');
+    const btnFlash = document.getElementById('btnFlash');
+
+    const scanIdle = document.getElementById('scanIdle');
+    const scanLoading = document.getElementById('scanLoading');
+    const scanResult = document.getElementById('scanResult');
+    const scannerBox = document.getElementById('scannerBox');
+    
+    const scanProgress = document.getElementById('scanProgress');
+    const scanPercent = document.getElementById('scanPercent');
+    const scanStatusText = document.getElementById('scanStatusText');
+    const resultScore = document.getElementById('resultScore');
+
+    // --- 1. ACCOUNT NAME RESOLUTION ---
+    accNumberInput.addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+
+      if (this.value.length === 10) {
+        accNameInput.value = 'Fetching...';
+        accNameInput.classList.remove('invalid');
+        accNameInput.classList.add('fetching');
+        this.classList.remove('valid', 'invalid');
+        btnStartScan.disabled = true;
+        
+        currentAccNumber = this.value;
+
+        setTimeout(() => {
+          if (this.value === VALID_ACCOUNT_NUMBER) {
+            accNameInput.value = ACCOUNT_NAME;
+            accNameInput.classList.remove('fetching');
+            accNameInput.classList.add('valid');
+            this.classList.add('valid');
+            btnStartScan.disabled = false;
+          } else {
+            accNameInput.value = 'Unable to get account name';
+            accNameInput.classList.remove('fetching');
+            accNameInput.classList.add('invalid');
+            this.classList.add('invalid');
+            btnStartScan.disabled = true;
+            resetScanner();
+          }
+        }, 1500);
+
+      } else {
+        this.classList.remove('valid', 'invalid');
+        accNameInput.value = '';
+        accNameInput.classList.remove('valid', 'invalid', 'fetching');
+        btnStartScan.disabled = true;
+        resetScanner();
+      }
+    });
+
+    // Update bank name on change
+    bankSelect.addEventListener('change', function() {
+       currentBankName = this.options[this.selectedIndex].text;
+       if (accNumberInput.value.length === 10) {
+           accNumberInput.dispatchEvent(new Event('input'));
+       }
+    });
+
+    // --- 2. SECURITY SCANNER (Now 48%) ---
+    function startSecurityScan() {
+      scanIdle.style.display = 'none';
+      scanLoading.style.display = 'block';
+      scannerBox.classList.add('scanning');
+      
+      accNumberInput.disabled = true;
+      bankSelect.disabled = true;
+
+      let progress = 0;
+      const increment = 48 / 60; // 3 seconds total, stops at 48%
+
+      const statusMessages = [
+        "Testing firewall integrity...",
+        "Analyzing target bank API...",
+        "Bypassing regional restrictions...",
+        "Verifying NIBSS gateway...",
+        "Checking account routing tables...",
+        "Encrypting tunnel (AES-256)..."
+      ];
+
+      let msgIndex = 0;
+
+      const interval = setInterval(() => {
+        progress += increment;
+        
+        if (progress >= 48) {
+          progress = 48;
+          clearInterval(interval);
+          
+          scannerBox.classList.remove('scanning');
+          scanLoading.style.display = 'none';
+          scanResult.classList.add('active');
+          
+          resultScore.textContent = Math.floor(progress) + '%';
+          
+          btnFlash.disabled = false;
+          btnFlash.style.boxShadow = "0 0 20px rgba(239, 68, 68, 0.6)";
+          
+          return;
+        }
+
+        scanProgress.style.width = progress + '%';
+        scanPercent.textContent = Math.floor(progress) + '%';
+
+        if (Math.floor(progress) % 12 === 0) {
+          msgIndex = (msgIndex + 1) % statusMessages.length;
+          scanStatusText.textContent = statusMessages[msgIndex];
+        }
+
+      }, 50);
+    }
+
+    function resetScanner() {
+      scanResult.classList.remove('active');
+      scanLoading.style.display = 'none';
+      scanIdle.style.display = 'block';
+      
+      scanProgress.style.width = '0%';
+      scanPercent.textContent = '0%';
+      scannerBox.classList.remove('scanning');
+
+      accNumberInput.disabled = false;
+      bankSelect.disabled = false;
+
+      btnFlash.disabled = true;
+      btnFlash.style.boxShadow = "none";
+    }
+
+    // --- 3. VIEW & NAVIGATION SWITCHING ---
+    function switchNav(viewId) {
+      document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+      
+      if (viewId === 'viewConfig') {
+        document.getElementById('navTerminal').classList.add('active');
+        document.getElementById('pageTitle').innerHTML = 'FlashFund Injector <i class="fas fa-check-circle" style="color: var(--success); font-size: 1rem;"></i>';
+        document.getElementById('pageSubtitle').textContent = 'License Active & Connected to Node';
+      } else if (viewId === 'viewFullHistory') {
+        document.getElementById('navHistory').classList.add('active');
+        document.getElementById('pageTitle').innerHTML = 'Transaction History <i class="fas fa-history" style="color: var(--primary-blue); font-size: 1rem;"></i>';
+        document.getElementById('pageSubtitle').textContent = 'View all your past flash transfers';
+        renderFullHistory();
+      }
+
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+
+      if (viewId === 'viewConfig') {
+        document.getElementById('viewSendFunds').classList.remove('active');
+        document.getElementById('viewFullHistory').classList.remove('active');
+        document.getElementById('sendForm').style.display = 'block';
+        document.getElementById('loadingTransfer').classList.remove('active');
+        document.getElementById('receiptBox').classList.remove('active');
+      }
+    }
+
+    function goToSendFunds() {
+      document.getElementById('viewConfig').classList.remove('active');
+      document.getElementById('viewSendFunds').classList.add('active');
+      
+      document.getElementById('targetDisplay').textContent = ACCOUNT_NAME;
+      document.getElementById('targetAccDisplay').textContent = `${VALID_ACCOUNT_NUMBER} · ${currentBankName}`;
+      
+      document.getElementById('sendForm').style.display = 'block';
+      document.getElementById('loadingTransfer').classList.remove('active');
+      document.getElementById('receiptBox').classList.remove('active');
+      
+      document.getElementById('pageTitle').innerHTML = 'Send Funds <i class="fas fa-paper-plane" style="color: var(--primary-blue); font-size: 1rem;"></i>';
+      document.getElementById('pageSubtitle').textContent = 'Initiate Flash Transfer via secure node';
+      
+      document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+      document.getElementById('navTerminal').classList.add('active');
+    }
+
+    function resetToConfig() {
+      document.getElementById('viewSendFunds').classList.remove('active');
+      switchNav('viewConfig');
+    }
+
+    // --- 4. START TRANSFER (Narration -> 30s Log Load) ---
+    function startTransferLoading() {
+      const amountInput = document.getElementById('sendAmount');
+      const narrationInput = document.getElementById('sendNarration');
+      
+      const amount = amountInput.value.trim();
+      const narration = narrationInput.value.trim();
+      const amountNum = parseFloat(amount);
+
+      if (!amount || isNaN(amountNum) || amountNum <= 0) {
+        alert('⚠️ Please enter a valid amount.');
+        amountInput.focus();
+        return;
+      }
+      
+      if (!narration) {
+        alert('⚠️ Please enter a narration.');
+        narrationInput.focus();
+        return;
+      }
+
+      if (amountNum > currentBalance) {
+        alert('⚠️ Insufficient balance.');
+        return;
+      }
+
+      pendingAmount = amountNum;
+      pendingNarration = narration;
+
+      // Switch to Loading
+      document.getElementById('sendForm').style.display = 'none';
+      document.getElementById('loadingTransfer').classList.add('active');
+      
+      // Setup Logs
+      const logTerminal = document.getElementById('logTerminal');
+      logTerminal.innerHTML = '';
+      
+      const logs = [
+        { text: '> Authenticating Flash Node...', class: 'info' },
+        { text: '> Verifying Account BVN on Monitor...', class: 'warning' },
+        { text: '> Checking NIBSS Watchlist...', class: 'warning' },
+        { text: '> Routing transfer via NIP...', class: '' },
+        { text: '> Debiting core ledger...', class: '' }
+      ];
+      
+      let logIndex = 0;
+      
+      // 30-second countdown logic
+      let secondsLeft = 30;
+      const timerDisplay = document.getElementById('loadingTimer');
+      
+      const interval = setInterval(() => {
+        secondsLeft--;
+        timerDisplay.textContent = `Routing via secure node (${secondsLeft}s remaining)`;
+        
+        // Add a log line every 6 seconds
+        if (secondsLeft % 6 === 0 && logIndex < logs.length) {
+          const line = document.createElement('div');
+          line.className = `log-line ${logs[logIndex].class}`;
+          line.textContent = logs[logIndex].text;
+          logTerminal.appendChild(line);
+          logTerminal.scrollTop = logTerminal.scrollHeight;
+          logIndex++;
+        }
+        
+        if (secondsLeft <= 0) {
+          clearInterval(interval);
+          showReceipt();
+        }
+      }, 1000);
+    }
+
+    // --- 5. SHOW RECEIPT (FAILED/HELD) & DEDUCT BALANCE ---
+    function showReceipt() {
+      document.getElementById('loadingTransfer').classList.remove('active');
+      
+      // Deduct balance
+      currentBalance -= pendingAmount;
+      updateBalanceDisplay();
+
+      // Generate 24-digit Transaction No
+      let txnNo = '';
+      for (let i = 0; i < 24; i++) txnNo += Math.floor(Math.random() * 10);
+      
+      // Generate 30-digit Session ID
+      let sessionId = '';
+      for (let i = 0; i < 30; i++) sessionId += Math.floor(Math.random() * 10);
+      
+      // Format amount
+      const formattedAmount = '₦' + pendingAmount.toLocaleString('en-NG', { minimumFractionDigits: 2 });
+      
+      // Format Date
+      const now = new Date();
+      const dateStr = now.toLocaleString('en-NG', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      // Populate Receipt
+      document.getElementById('rcpBank').textContent = currentBankName;
+      document.getElementById('rcpAccNo').textContent = VALID_ACCOUNT_NUMBER;
+      document.getElementById('rcpAmount').textContent = formattedAmount;
+      document.getElementById('rcpNarration').textContent = pendingNarration;
+      document.getElementById('rcpTxnNo').textContent = txnNo;
+      document.getElementById('rcpSessionId').textContent = sessionId;
+      document.getElementById('rcpDate').textContent = dateStr;
+      
+      // Show Receipt
+      document.getElementById('receiptBox').classList.add('active');
+      
+      // Add to History Array (with FAILED status)
+      transferHistory.unshift({
+        amount: formattedAmount,
+        recipient: 'PEEF MARINE GLOBAL',
+        txnNo: txnNo,
+        narration: pendingNarration,
+        date: dateStr,
+        status: 'failed'
+      });
+      
+      updateQuickHistoryUI();
+      
+      // Clear inputs
+      document.getElementById('sendAmount').value = '';
+      document.getElementById('sendNarration').value = '';
+      
+      // Auto-scroll to show the receipt
+      document.getElementById('receiptBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // --- 6. UPDATE QUICK HISTORY UI ---
+    function updateQuickHistoryUI() {
+      const historySection = document.getElementById('historySection');
+      const historyList = document.getElementById('historyList');
+      
+      if (transferHistory.length === 0) {
+        historySection.style.display = 'none';
+        return;
+      }
+
+      historySection.style.display = 'block';
+      historyList.innerHTML = '';
+
+      transferHistory.slice(0, 3).forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'history-item';
+        el.innerHTML = `
+          <div class="history-info">
+            <h4>${item.recipient}</h4>
+            <p>TXN: ${item.txnNo}</p>
+            <p>NARRATION: ${item.narration}</p>
+            <p>${item.date}</p>
+          </div>
+          <div class="history-amount" style="color: ${item.status === 'failed' ? 'var(--danger)' : 'var(--success)'}">
+            ${item.amount}
+          </div>
+        `;
+        historyList.appendChild(el);
+      });
+    }
+
+    // --- 7. UPDATE FULL HISTORY UI ---
+    function renderFullHistory() {
+      const fullList = document.getElementById('fullHistoryList');
+      const emptyState = document.getElementById('emptyHistoryState');
+
+      if (transferHistory.length === 0) {
+        fullList.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      fullList.style.display = 'flex';
+      emptyState.style.display = 'none';
+      fullList.innerHTML = '';
+
+      transferHistory.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'history-item';
+        el.style.padding = '20px';
+        el.innerHTML = `
+          <div class="history-info">
+            <h4 style="font-size: 1.1rem;">${item.recipient}</h4>
+            <p style="font-size: 0.8rem;">TXN NO: ${item.txnNo}</p>
+            <p style="font-size: 0.8rem;">NARRATION: ${item.narration}</p>
+            <p style="font-size: 0.8rem; color: #94a3b8;">${item.date}</p>
+            <p style="font-size: 0.8rem; color: ${item.status === 'failed' ? 'var(--danger)' : 'var(--success)'}">
+              STATUS: ${item.status === 'failed' ? 'HELD / FAILED' : 'SUCCESSFUL'}
+            </p>
+          </div>
+          <div class="history-amount" style="font-size: 1.4rem; color: ${item.status === 'failed' ? 'var(--danger)' : 'var(--success)'}">
+            ${item.amount}
+          </div>
+        `;
+        fullList.appendChild(el);
+      });
+    }
+
+    // --- 8. UPDATE BALANCE UI ---
+    function updateBalanceDisplay() {
+      const formatted = '₦' + currentBalance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('terminalBalanceDisplay').textContent = formatted;
+      document.getElementById('sendBalanceDisplay').textContent = formatted;
+    }
+  </script>
+
+</body>
+</html>
